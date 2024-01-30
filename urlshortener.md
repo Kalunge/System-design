@@ -214,8 +214,82 @@ while 390 GB seems like a lot for this simple use case, it is important to remem
 Now let us talk about caching, as per our estimations, we will require around ~35GB of memory per day to cache 20% of the incoming requests to our services. for this use case we can use Redis or Memcached servers alongside  our API server
 
 ## Design
+Now that we have identified some core components, let us do the first draft of our system design. 
 
-![url-shortener-basic-design.png](url-shortener-basic-design.png)
+![url-shortener-basic-design.png](files/url-shortener-basic-design.png)
+ 
+#### Creating Anew URL
+1. when  a user creates a new URL, Our API server requests a new unique key from the Key Generation Service.
+2. Key Generation Service provides a unique key to the API server and marks the key as used
+3. API server writes the new URL entry to the database and cache.
+4. our service returns a http 201  (created) response to the user. 
+
+#### Accessing a  URL 
+1. when a user navigates to a certain short URL, the request is sent to the API servers.
+2. the request first hits the cache, and if the entry is not found then it is retrieved from the database and an HTTP 301(REDIRECT) is issued to the original URL
+3. if the key is still not found in the database, an HTTP 404(Not found) error is sent to the user.
+
+## Detailed Design
+it is time!!!
+
+### Data Partitioning
+to scale our databases we will need to partition our data. horizontal partitioning(sharding) can be a good first step. we can use partitions scheme such as 
+* Hash-Based partitioning
+* List-based partitioning
+* range based partitioning
+* composite partitioning
+
+the above approaches can still cause uneven data and load distribution, we can solve this using Consistent Hashing
+
+#### Database cleanup
+for passive cleanup, we can remove the entry when a user tries to access an expired link. This can ensure a lazy cleanup of our database and cache
+
+## Cache
+ Now let us talk about caching
+#### Which cache eviction policy to use?
+as we earlier discussed, we can use solutions like Redis and Memcached and cache 205 of the daily traffic but what kind of cache eviction policy would best fit our needs. 
+least recently used can be a good policy for our system. in this policy, we discard the least recently used key first.
+
+#### How to handle cache miss?
+whenever there is a cache miss, our servers can hit the database directly and update the cache with the new entries
+
+## Metrics and Analytics 
+recording analytics and metrics is one of our extended requirements. we can store and update metadata like visitor's country, platform, the number of views, etc alongside the URL entry in our database. 
+
+## Security
+for security, we can introduce private URLs and authorization. a separate table can be used to store user ids that have permissions to access a specific URL. if a user does not have proper permissions, we can return an HTTP 401(unauthorized) error.
+
+we can also use an API Gateway as they can support capabilities like authorization, rate limiting, and load balancing out of the box. 
+
+## Identify and resolve bottlenecks
+![url-shortener-advanced-design.jpeg](files%2Furl-shortener-advanced-design.jpeg)
+ 
+let us identify and resolve bottlenecks such as single points of failure in our design
+* what if the API service or Key Generation Service crashes
+* how will we distribute traffic between our components
+* how can we reduce the load in our database
+* what if the key database used by KGS fails
+* how to improve the availability of our cache
+
+To make our system more resilient we can do the following
+* running multiple instances of our Servers and Key Generation Service
+* introducing load balancers between clients, servers and databases, and cache servers
+* using multiple read replicas for our database as it is a read heavy system
+* standby replica for our key database in case it fails
+* multiple instances and replicas for our distributed cache. 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

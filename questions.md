@@ -1,0 +1,4 @@
+- How does indexing increase query efficiency
+- what is base 62 encoding
+- what is a [zookeeper](https://zookeeper.apache.org/)
+- 

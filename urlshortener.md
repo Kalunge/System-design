@@ -132,22 +132,90 @@ createURL(apiKey: String, originalURL: string, expiration?: Date) : String
 
 #### Returns
 Short URL ( ```string ```) : New shortened URL
+ 
+### Get URL  
+this API should retrieve the original URL from a given short URL.
+```jav
+getURL(apiKey: String, shortURL: string) : String
+```              
+#### Parameters                                                        
+ - API Key (```string ```): API Key provided by the user                
+ - Short URL(```string ```): short url mapped to the original url
 
+#### Returns                                       
+Original URL ( ```string ```) : original url to be retrieved
 
+### Delete URL     
+this API should delete a given short URL from our system
 
-           
+ ```jav
+ deleteURL(apiKey: String, shortURL: string) : boolean
+ ```   
+#### Parameters                                                   
+ - API Key (```string ```): API Key provided by the user          
+ - Short URL(```string ```): short url to be deleted 
 
+#### Returns                                                  
+result ( ```boolean ```) : Represents whether the operation was successful or not.
+ 
+### Why do we need an API Key
+As you must have noticed we are using an API key to prevent abuse of our services. using thei API key we can limit the users to a certain number of requests per second or minute. this is quite a standard practice for developer APIs and should cover our extended requirement.
 
+## High Level Design
+now let us do a high level design for our system
+### URL Encoding
+our system's primary goal is to shorten a given URL, let us look at different approaches
 
+#### Base62 Approach
+in this approach we can encode the URL using Base62 which consists of the capital letters A-Z, small case letters a-z, and numbers 0-9.
+        
+                Number of URLs = 62 ** N
+```N```: Number of characters in the generated URL
 
+So, if we want to generate a URL that is 7 characters long, we will generate ~3.6 Trillion different URLs.
+        
+                62 ** 5 =~ 916 million URLs
+                62 ** 6 =~ 56.8 billion URLs
+                62 ** 7 =~ 3.5 trillion URLs  
 
+this is the simplest solution here, but it does not guarantee non-duplicate or collision-resistant keys.
 
+#### Md5 Approach 
+the Md5 message-digest algorithm is a widely used hash function producing a 128-bit hash value(or 32 hexadecimal digits). We can use thes 32 hexadecimal digits for generating 7 characters long URL.
 
+                MD5(original_url) -> base62encode -> hash
+however, this creates a new issue for us, which is duplication and collision. we can try to re-compute the hash untill we find a unique one but that will increase the overhead of our system. it is better to look for more scalable approaches
 
+#### Counter Approach 
+in this approach, we will start with a single server which will maintain the count of the keys generated. once our service receives a request, it can reach out to the counter which returns a unique number and increments the counter. when the next request comes the counter again returns the unique number and this goes on.
+        
+                Counter(0 - 3.5 trillion) -> base62encode -> hash
 
+the problem with this approach is that it can quickly become a single point of failure. and if we run multiple instances of the counter we can have collision as it is essentially a distributed system.
 
+to solve this issue we can use a distributed system manager such as Zookeeper which can provide distributed synchronization. zookeeper can maintain multiple ranges for our servers
+        
+                Range 1 : 1 -> 1 , 000, 000 Range 2 : 1 , 000, 001 - > 2 , 000, 000    Range 3 : 2 , 000, 001 - > 3 , 000, 000    ...
+once a server reaches its maximum range, zookeeper will assign an unused counter range to the new server. this apporach can guarantee non-duplicate anc collision resistant URLs. also we can run multiple instances of zookeeper to remove the single point of failure
+## Key Generation Service
+as we discussed,  generating a unique key at scale without duplication and collisions can be a bit of a challenge. to solve this problem, we can create a standalone key generation service that generates a unique key aheaf of time and stores it in a separate database for later use. This approach can make things a bit simple for us. 
 
+#### How to handle concurrent access
+once the key is used, we can mark it in the database to make sure we don't reuse it, however, if there are multiple server instances reading data concurrently, two or more servers might try to use the same key.
+the easiest way to solve this would be to store keys in two tables.   as soon as a key is used we move it to a separate table with appropriate locking in place.Also, to improve reads, we can keep some of the keys in memory.
 
+#### KGS database estimations
+as per our discussion, we can generate up to ~56.8 billion unique 6 character long keys which will result in us having to store 33 GB of keys
+
+        6 characters * 56.8 billion =~ 390 GB
+while 390 GB seems like a lot for this simple use case, it is important to remember this is for the entirety of our service lifetime and the size of the keys database would not increase like our main database. 
+
+### Caching
+Now let us talk about caching, as per our estimations, we will require around ~35GB of memory per day to cache 20% of the incoming requests to our services. for this use case we can use Redis or Memcached servers alongside  our API server
+
+## Design
+
+![url-shortener-basic-design.png](url-shortener-basic-design.png)
 
 
 

@@ -3,4 +3,7 @@
 - what is a [zookeeper](https://zookeeper.apache.org/)
 - what is consistent hashing
 - what are cache eviction policies
-- 
+- drawing flow diagrams using lucid charts
+- what is Bandwidth
+- what is ingress
+- what is UUID

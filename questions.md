@@ -7,3 +7,4 @@
 - what is Bandwidth
 - what is ingress
 - what is UUID
+- what is a race condition

@@ -1,6 +1,7 @@
 # Introduction to Modern System Design
 ## What is system Design
-**System Design** is the process of defining components and their integration, APIs, and data models to build large scale systems that meet a specified set of functional and non functional requirements.
+**System Design** is the process of defining components and their integration, APIs, and data models to build large scale systems that meet a specified set o
+f functional and non functional requirements.
 system design uses the concepts of computer networking, parallel computing, and distributed systems to craft systems that scale well and are performant. Distributed systems scale well by nature. However, distributed systems are inherently complex. The discipline of system design helps us tame this complexity and get the work done. 
 System design aims to build systems that are reliable, effective, and maintainable, among other characteristics
 
@@ -787,15 +788,298 @@ here we will understand load balancers and their usage within a system. we will 
 
 ## Algorithms of load balancers
 load balancers distribute client requests according to an algorithm. some well-known algorithms are given below
-* ****
+* **Round-robin scheduling**: in this algorithm, each request is forwarded to a server in the pool in a repeating sequential manner
+* **weighted round-robin**: if some servers have a higher capability of serving client's requests, then it is preferred to use a weighted round-robin algorithm. here, each node is assigned a weight. LBs forward clients' requests according to the weight of the node. the higher the weight, the higher the number of assignments. 
+* **least connections**: in certain cases, even if all the servers have the same capacity to serve clients, uneven load oncertain servers is still a possibility. for example, some clients may have a request that requires longer to serve. or some clients may have subsequent requests on the same connection. in that case, we can use algorithms like least connections where newer arriving requests are assigned to servers with fewer existing connections. LBs keep a state of the number and mapping of existing connections in such a scenario. we will discuss more about state maintenance later .
+* **least response tme: **in performance-sensitive services, algorithms such as least response time are required. this algorithm ensures that the server with the least response time is requested to serve the clients
+* **IP hash**: some applications provide a different level of service to users based on their ip addresses. in tha case, hashing the ip address is performed to assign user's requests to servers. 
+* **URL hash: **it may be possible that some services within the application are provided by specific servers only. in that case, a client requesting service form a URRL is assigned to a certain cluster or set of servers. the url hashing algorithm is used in those scenarios.
+there are other algorithms also, like randomized or weighted least connections algorithms
+## Static vs dynamic algorithms
+algorithms can be static or dynamic depending on the machine's state. let us look at each of the categories individually.
+**static algorithms:** dont consider the changing state of the servers. therefore, task assignment is carried out based onexisting knowledge about the server's configuration. Naturally, these algorithms are not complex, and they get implemented in a single route or commodity machine where all the requests arrive.
+**dynamic algorithms** are algorithms that consider the current or rece=nt state of the servers. dynamic algorithms maintain state by communicating with the server, which adds a mouunication overhead. state maintainance makes the design of the algorithm much more complicated.
+
+Dynamic algorithms require different load balancing servers to communicate with each other to exchange information. therefore, dynamic algorithms can be modular because no single entity wii do the decision making. although this adds complexity to dynamic algorithms, it results in improved forwarding decisions. finally, dynamic algorithms monitor the healt of the servers and forward requests to active servers only.
+**Note: in practice, dynamic algorithms provide far better results because they maintain a state of serving hosts and are, therefore, worth the effort and complexity.**
+
+## Stateful vs stateless LBs
+while static and dynamic algorithms are required to consider the health of the hosting servers, a state is maintained to hold session information of different clients with hosting servers.
+if the session ifnormation is not kept at a lower layer(distributed cache or database), load balancers are used to keep the session information. below we describe two ways of handling session maintenance through LBs
+* stateful
+* stateless
+
+## stateful load balancing
+as the name indicates, **stateful load balancing** involves maintaining a state of the sessions established between clients and hosting servers. the stateful LB incorporates state information in its algorithm to perform load balancing.
+essentially, the stateful LBs retain a data structure that maps incoming clients to hosting servers . stateful LBs increase complexity and limit scalability because session information of all the clients in maintained across all the load balancers. that is, load balancers share their state information with each other to make forwarding decisions
+![Screenshot 2024-02-29 at 18.02.20.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_qOBSRy%2FScreenshot%202024-02-29%20at%2018.02.20.png)
 
 
+## stateless load balancing
+**stateless load balancing** maintains no state and is therefore, faster and lightweight. stateless load balancers use consistent hasshing to make forwarding decisions. However, if infrasturcture changes(for example, a new application server joining)
+ stateless LBs may not be as resilient as stateful  liad balancers because consistent hashing alone is not enough to route a request to the correct application server. therefore, a local state may still be required with consistent hashing
+![Screenshot 2024-02-29 at 18.05.55.png](..%2F..%2F..%2FScreenshot%202024-02-29%20at%2018.05.55.png)
+therefore, a state maintained across different load balancers is considered a stateful load balancing. wehreas a state maintained within a load balancer for internal use is assumed as stateless load. 
 
+## types of load balancers
+depending on the requirements, load balancing can be performed at the network/transport and application layer of the open systems interconnection layers.
+**layer 4 load balancers**: layer 4 refers to the load balancing performed on the basis of transport protocols like TCP and UDP. these types of LBs maintain connection/session with the clients and ensures that he same(TCP/UDP) communication ends up being forwarded to the same back-end server. even though TLS terminatio is performed at layer 7 LBs, some layer 4 LBs also transport it.
+**layer 7 LBs** layer 7 LBs are based on the data of the application layer protocols. it is possible to make application-aware forwarding decisions based on HTTP headers, urls, cookies, and other application specific data-for example, user id. apart from performing tls termination, these LBs can take responsibilities like rate limiting users, http routing, and header rewriting.
 
+**Note: layer 7 LBs are smart in  terms of inspection. however, layer 4 LBs are faster in terms of processing**
 
+## Load balancer deployment
+we discussed the trade-offs of load balancing performed at different OSI layers. in practice, however, a single layer LB is not enough for a large data center. in fact multiple layers of load balancers coordinate to take informed forwarding decidions. a traditional data center may have a three-tier LB as shown below
+![Screenshot 2024-03-01 at 09.12.50.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_YSOhqj%2FScreenshot%202024-03-01%20at%2009.12.50.png)
 
+## Implementation of load balancers
+different kinds of load balancers can be implemented depending on the number of incoming requests, organization and application-specific requirements
 
+## Hardware load balancers
+load balancers were introduced in the 1990s as hardware devices. hardware load balancers work as stand-alone devices and are quite expemsive. nonetheless , they have their perfomrnce benefits and are able to handle a lot of concurrent users. configuration of hardware-based solutions is problematic becuase it requires additional human resources. therefore, they are not the go-to solutions even for large enterprises that can afford them. availability can be an issue with hardware load balancers because additional hardware will be required to failover to in case of failures. finally, hardware load balancers can have highrt maintainance / operational costs and compatibility issues making them less flexible. not to mention that hardware load balancers have vender locks as well
 
+## software load balancers
+software load balancers are becoming increasingly popular because of their flexibility, programmability and cost-effectiveness. that is all possible because they are implemented on commodity hardware. software load balancers scale well as requirements grow. availablity is not an issue because small additional costs are required to implement shadow load balancers on commodity hardware. additionally, software load balancers can provide predictive analysis that can help prepare for future traffic patterns.
+
+## cloud load balancers
+with the advent of the field of cloud computing , load balancers as a service has been introduced. this is where cloud owners provide load balancing services. users pay according to their usage or the service-level agreement with the cloud provider. cloud based load balancers may not necessarily replace a local on-premise load balancing facility, but they can perform global traffic management between different zones. primary advantages of such load balancers include ease of use , management metered cost, flexibility in terms of usage, auditing and monitoring services to improve business decisions. an example of how cloud based load balancers can provide GSLB is shown below
+![Screenshot 2024-03-01 at 09.36.50.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_ytbc9P%2FScreenshot%202024-03-01%20at%2009.36.50.png)
+
+# Introduction to databases.
+here, we will understand what a database is and its use case in system design
+
+## problem statement
+let us start with a simple question. can we make a software application without using databases? let us suppose we have an application like whatsapp. people use our application to communicate with their friends. now, where and how we can store information permantently and retrieve it?
+we can use a simple file to store all the records on separate lines and retrieve them from the same file. but using a file for storage has some limitations
+
+## limitations of file storage
+* we cannot offer concurrent management to separate users accessing the storage files from different locations
+* we cannot grant different access rights to different users.
+* how will the system scale and be available when adding thousands of entries?
+* how will we search content for different users in a short time?
+![Screenshot 2024-03-01 at 11.04.30.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_VqIcsH%2FScreenshot%202024-03-01%20at%2011.04.30.png)
+## solution
+these limitations can be addressed by a database.
+a **database** is an organized collection of dta that can be managed and accessed easily. Databases are created to make it easier to store , retrieve, modify, and delete data in connection with different data-processing procedures.
+some of the applications where we use database management are the banking systems, online shopping stores, and so on. different organizations have different sizes of databases according to their needs.
+
+**Note: According to a source, the world data center for climate is the largest database in the world. it contains around 220 TB of web data and 6 PB of additional data**
+there are two basic types of databases
+* SQL(relational databases)
+* NoSQL(non-relational databases)
+
+they differ in terms of their intended use case, the type of information they hold, and the storage method they employ.
+![Screenshot 2024-03-01 at 11.14.28.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_BQw1gz%2FScreenshot%202024-03-01%20at%2011.14.28.png)
+Relational databases, like phone books that record contact numbers and addresses, are organized and have predetermined schemas. non-relational databases, like file directories that store anything from a person's constant information to shopping preferences are unstructured, scattered, and feature a dynamic schema. we will discuss their differences and their types in detail
+
+## Advantages
+a proper database is essential for every business or organization. this is because the database stores all essential information about the organization, such as personnel records, transactions, salary information, and so on. folowing are some of the reasons why the database is important
+* managing large data
+* retrieving accurate data
+* easy updation
+* security
+* data integrity
+* availability
+* scalability
+
+we will discuss
+* types of databases
+* data replication
+* data partitioning
+* cost-benefit analysis
+
+## Types of Databases
+
+### Relational databases
+**Relational databases** adhere to particular schemas before storing the data. the data stored in Relational databases has prior structure. mostly, this model organizes data into one or more relations(tables) with aunique key for each tuple(instance). each entity of the data consists of instances and attributes, where instances are stored in rows, and the attributes of each instance are stored in columns. since each tuple has a unique key, a tuple in one table can be linked in other tables by storing the primary keys in other tables, generally known as foreign keys.
+
+a structure query language is used for manipulating the database. this includes insertion, deletion, and retrieval of data.
+
+relational databases are simple, robust, flexible, performant, scalable and compatible in managing general data.
+
+Relational databases provide the atomicity, consistency, isolation, and durability(ACID) properties to maintain the integrity of the database. acid is a powerful abstraction that simplifies complex interactions wit the data and hides many anomalies(like drty reads, dirty writes, read skew, lost updates, write skew, and phantom reads) behind a simple transaction abort.
+
+but ACID is like a big hammer by design that it is generic enough for all the problems. if some specific application only needs to deal with a few anomalies, there is a window of opportunity to use a custom solution for higher performance, though there is added complexity.
+
+ACID In detail
+**Atomicity**: a transaction is considered an atomic unit. therefore, either all the statements within a transaction will successfully execute, or none of them will execute. if a statement fails within a transaction, it should be aborted and rolled back
+**Consistency**: at any given time, the database should be in a consistent state, it should remain in a consistent state after every transaction. for example, if multiple users want to view a record from the database, it should return a similar result each time.
+**Isolation: ** in the case of multiple transactions running concurrently, they should not be affected by each other. the final state of the database should be the same as the transactions were executed sequentially.
+**durability:** the system should guarantee that completed transactions will survive permanently in the database even in system failure events
+
+examples: 
+  * MYSQL
+  * Oracle Database
+  * Microsoft sql server
+  * ibm db2
+  * Postregs
+  * SQlite
+
+## Why relational databases
+relational databases are the default choices for structured data storage. there are a number of advantages to these databaseslike its abstarction of ACID transactions and related programming semantics.this makes it very convinient foe the end-programmer to use relational databases. some important feature include
+
+* **Flexibility**: data definition language makes it easier and possible to modify schema(tables, columns, database etc) while other queries are happening and the db server is running
+* **reduced redundancy**: use of relationships helps eliminate data redundancy.
+* **concurrency**: transactions being atomic helps in cases where data is read and written at the same time by many users
+* **Integration**: the process of aggregation from multiple sources is a common practice in enterprise applications. a common way to perform this aggregation is to integrate a shared database where multiple applications store their data.. this way all the applications can easily access each oher's data while the concurrency control measures handle the access of multiple applciations. 
+* **backup and disaster recovery**: Relational databases guarantee the state of data is consistent at any time. the export and imort operations make backup and restoration easier. most cloud-based relational databases perform contnous mirroring to avoid loss of data and make the restoration process easier and quicker
+
+## Drawback
+### Impedance mismatch
+**Impedance mismatch** is the difference between the relational model and the in-memory data structures. the relational model organizes data into a tabular structure with relations and tuples. SQL operation on this structured data yields relations aligned with relational algebra. however, it has some limitaions. in particular, the values in a table take simple values that cannot be a structure or a list. the case is differnet for in-memory, where a complex data structure can be stored. to make the complex structures compatible with the relations, we would need a translation if the data in light of relational algrebra. so the Impedance requires translation between two representations, as denoted in the following figure
+![Screenshot 2024-03-01 at 11.48.46.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_fPyYF8%2FScreenshot%202024-03-01%20at%2011.48.46.png)
+
+## non relational databases?
+a NoSQL is designed for a variety of data models to access and manage data. these databases are used in applications that require a large volume of semi-structured and unstructured data, low latency, and flexible data models. this can be achieved by relaxing some of the data consistency restrictions of other databases. 
+
+* **simple design** unlike relational databases NoSQL does not require dealing with the impedance mismatch-for example storing all the employees' data in one document instead of multiple tables that require join operations. this strategy makes it simple and easier to write less code, debug, and maintain
+* **horizontal scaling**: Primarily, NoSQL is preferred due to its ability to run databases on a large cluster. this solves the problem when the number of concurrent users increases. NoSQL makes it easier to scale out since the data related to a specific employee is stored in one document instead of multiple tables over nodes. NoSQL databases often spread data across multiple nodes and balance data and queries across nodes automatically. in cse of a node failure, it can be transparently replaced without any application disruption.
+* **availability**: to enhance the availability of data, node replacement can be performed without application downtime. most of the non-relational databases variants support data replication to ensure high availability and disaster recovery.
+* **support for unstructured and semi-structured data**: many NoSQL databases work with data thatdoes not have schema at the time of databse confguration or data writes. for example, document databases are structureless, they allow documents to have different fields. for example, one JSON document can have fewer fields than the other.
+* **cost**: licenses for many RDBMSs are pretty expensive, while many NoSQL databases are open source and freely available. similaryl, some RDBMSs rely on costly proprietary hardware and storage systems, whle NoSQL databases use clusters of cheap commodity servers.
+
+NoSQL databases are divided into various categories based on the nature of the operations and features, including document store, columlar store, key-value store, and graph database. we will discuss each of them along with their use cases from the system design perspective.
+
+## Types of NoSQL databases
+![Screenshot 2024-03-01 at 12.02.58.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_pXFLp2%2FScreenshot%202024-03-01%20at%2012.02.58.png)
+
+## Key-value database
+**Key-value databases** use key-value methods like hash tables to store data in key-value pairs. we can see the depicted in the figure below. here the key servs as a unique or primary key and the values can be anything ranging from simple scalar values to complex objects. these databases allow easy partitioning and horizontal scaling of the data. some pupular key-value databases include Amazon DynamoDB, and Memcached DB.
+  **use case** - Key-value databases are efficient for session-oriented applications. session-oriented applications, such as web applications, store user's data in the main memory or ina database during a session. this data may include user profile information, recommendations, targeted promotions, discounts, and more. a unique ID is assigned to each user's session for easy access and storage. therefore, a better choice to store such data is the key-cvalue database
+the following figure shows an example of a key-value database. the productID and Type of the ite are collectively considered as the primary key. this is considered as the key for the key-value database. moreover, the schema for storing item attributes is define based on the nature of the item and the number of attributes it possesses.
+![Screenshot 2024-03-01 at 12.11.02.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_4jzslX%2FScreenshot%202024-03-01%20at%2012.11.02.png)
+
+## Document database
+A **Document database** is designed to store and retrieve documents in formats like XML, JSON, BSON, and so on. these documents are composed of a heierarchical tree data structure that can include maps, collections, and scalar values. Documents in this type of database may have varying structrues and data. Mongodb and google cloud firestore are examples of Document databases
+  **use case**: Document databases are suitable for unstructured catalog datam like json files or other complex structured hierarchical data. for example, in e-commerce applications a product has thousands of attributes, which is unfeasible to store in a relational database due to its impact on the reading perormance. here comes the role of a dcoument database, which can efficiently store each attribute in a single file for easy management and faster reading speed. moreover, it is also a good option for content management applications, such as blogs and video platforms. an entity required for the application is stored as a single docy=ument in such applications.
+![Screenshot 2024-03-01 at 12.18.21.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_AZ3H6O%2FScreenshot%202024-03-01%20at%2012.18.21.png)
+
+## Graph database
+**## Graph databases** use the graph data structure to store data, where nodes represent entities, and edges show relationships bewtween entities. the organization of nodes based onrelationships leads to interesting patterns between the nodes. this database allows us to store the data once and then interpret it differnetly based on relationships. popular graph databases include Noe4j OrientDB, and InfiniteGraph. graph data is kept in store files for persistenc storage. each of the files contains data for a specific part of the graph, such as nodes, links, properties and so on. 
+in the following figure, some data is stored using a grah data structure in nodes connected to each other via edges rerpesenting relationships between nodes. each node has some properties, like name, ide and age. the node having id:2 has the name of James and age of 29 years
+![Screenshot 2024-03-01 at 12.25.01.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_q7S5JZ%2FScreenshot%202024-03-01%20at%2012.25.01.png)
+
+  **use case**: Graph databases can be used is social applications and provide interesting facts and figures among different kinds of users and their activities. the focus of graph databases is to store data and pave the way to drive analyses and decisions based on relationships between entities. the nature of graph databases makes them suitable for various applications, such as data regulation and privacy, machine learning research, financial services-based applications and many more
+## Columnar database
+**Columnar databases** store data in columns instead of rows. they enable access to all entries in the database column quickly and efficiently. popular Columnar databases include cassandra, HBase, Hypertable and Amazon redshift.
+  **use case**: Columnar databases are efficient for a large number of aggregation and data analytics queries. it drastically reduces the disk I/O requirements and the amount of data require to load from the disk. for example, in applications related to fincancial institutions, there is a need to sum the financial transaction over a period of time. Columnar databases make this operation quicker by just reading the column for the amount of money, ignoring other attributes of the customers. 
+the following figure shows an example of a Columnar database, where data is stored in a column-oriented format. this is unlike relational databases, whch store data in a row oriented fashion
+![Screenshot 2024-03-01 at 12.33.15.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_VjqnTM%2FScreenshot%202024-03-01%20at%2012.33.15.png)
+
+## Drawbacks of NoSQL databases
+* **lack of standardization**: NoSQL doesnt follow any specific standard, like how relational databases follow relational algebra. porting applications from one type of NoSQL database to another might be a challenge.
+* **Consistency: **NoSQL databases provide different products based on the specific trade-offs betwee consistency and availability when failures can happen. we wont have strong data integrity , like primary and referential inegrities in a relational database. data might not be strongly consistent but slowly converging using a weak model like eventual consistency. 
+
+## Choosing the right database
+![Screenshot 2024-03-01 at 12.40.11.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_FbWEtM%2FScreenshot%202024-03-01%20at%2012.40.11.png)
+
+# Data replication
+here we will understand the models through which data is replicated across several nodes. 
+ Data is an asset for an organization because it drives the whole business. data provides critical business insights into what is important and what needs to be changed. organizations also need to securely save and server their clients' data on demand. timely access to the required data under varying condiitions is required to successfully run an online business.
+we need the following characteristics from our data store.
+  * availability under faults
+  * scalability
+  * performance
+it is challenging or even impossible to achieve the above characteristics on a single node.
+## Replication
+**Replication** refers to keeping multiple copies of the data at various nodes(preferrably geographically distributed) to achieve availability scalability and performance. in this lesson, we assume that a single node is enough to hold our entire data. we wont use this assumption while discussing the partitioning of data in multiple nodes. often, the concepts of replication and partitioning go togterher. 
+however, with many benefits, like availability, replication comes with its complexities. replication is relatively simple if the replicated data does not require frequent changes. the main problem in replication arises when we have to maintain changes in the replicated data over time.
+additional complexities that could arise due to replication are as follows
+  * how do we keep multiple copies of data consistent with each other?
+  * how do we deal with failed replica nodes?
+  * should we replicate syncrounously or asynchronously
+    * how do we deal with replications lag in case of asynchronous replication
+  * how do we handle concurrent writes?
+  * what consistency model needs to be exposed to the end programmers?
+![Screenshot 2024-03-01 at 15.17.17.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_em8rkR%2FScreenshot%202024-03-01%20at%2015.17.17.png)
+
+## synchronous vs asynchronous replication
+there are two ways to disseminate changes to the replica nodes
+  * synchronous replication
+  * asynchronous replication
+in **synchronous** replication, the primary node waits for acknowledgement from secondary nodes about updating the data. after receiving the aknowledgement from all secondary nodes, the primary node reports success to the client. whereas in **asynchronous** replication, the primary node does not wait for the acknowledgement from the secondary nodes and reports success to the client after updating itself.
+the advantage of synchronous replication is that all the secondary nodes are completely up to date with the primary node,. however there is a disadvantage to this approach. if one of the secondary nodes doe not acknowledge due to failure or fault in the network, the orimary node will be unable to acknowledge the client untill it receives the successful acknowledgeent from the crashed node. this causes high latency in the response from the primary node to the client.
+on the other hand, the advantage of asynchronous replication is that the primary node can continue its work even if all the secondary nodes are own. however, if the primary node fails, the writes that werent copied to the secondary nodes will be lost.
+the graph below explains the tradeoffs between data consistency and availability when different components of the sysetm can fail.
+![Screenshot 2024-03-01 at 15.25.05.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_t8EBcf%2FScreenshot%202024-03-01%20at%2015.25.05.png)
+
+## Data replication models
+* single leader or primary-secondary replication
+* multi -leader replication
+* peer-peer or leaderless replication
+
+## single leader or primary-secondary replication
+
+in **primary-secondary replication**, data is replicated across multiple nodes. one node is designated as the primary. it is responsible for processing any writes to data stored on the cluster. it also sedns all the writes to the secondary nodes and keeps them in sync.
+primary-secondary replication is appropriate when ou workload is read-heavy. to better scale with increasing readers, we can add more followers and distribute the read load across the available followers. However, replicating data to many followers can make a primary bottleneck. additionally, primary-secondary replication is inappropraite f pur workload is write-heavy.
+another advantage of primary-secondary replication is that it is read resilient. secondary nodes can still handle read requests in case of primary node failure. therefore, it is a helpful approach for read-intensive applications.
+replication via this approach comes with nconsistency if we use asynchronous replication. clients reading from different replicas may see inconsistent data in the case of failure of the primary node that couldnt propagate updated data to the secondary nodes. so if the primary node fails, any missed updates not passed on to the secondary nodes can be lost.
+![Screenshot 2024-03-01 at 15.51.55.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_b1Rz71%2FScreenshot%202024-03-01%20at%2015.51.55.png)
+**question:** what happen when the primary node fails?
+**answer:** a secondary node can be appointed as primary node, which speeds up the rocess of recovering the initial primary node. there are two approaches to select new primary node; manual or automatic. in a **manual approach**, an operator decides which node should be the primary node and notifies all secondary nodes.. in an **automatic approach**, when secondary nodes find out thet the primary node has failed, they appoint the new primary node by conducting an election known as a leader election
+
+### primary-secondary replication methods
+* statement-based replication
+* write ahead log(WAL) shipping
+* Logical(row based)replication
+
+#### statement-based replication
+**statement-based replication** is an approach used in MySQL databases. in this approach the primary node executes the sql statements such as insert, update, delete
+and then the statements are written into a log file. in the next step, the log file is sent to the secondary nodes for execution. this type of replication was used in MySQL before v5.1.
+while this type of replication seems good, it also has some disadvantages. for example, any nondeterministic functions such as NOW() might result in distinct writes on the primary and secondary nodes. 
+**Note: the NOW() function returns the current date and time according to the system clock**
+
+#### write ahead log(WAL) shipping
+**write ahead log(WAL) shipping** is a data replication technique used in both postgresql and oracle. in this technique, when a transaction occurs, it is initailly recorded in a transactional log file, and the log file is written to disk. subsequently, the recorded operations are executed on the primary database before being transmitted to secondary nodes for execution. unlike SBR , WAL maintains transactional logs instead of SQL statements into a log file, ensuring consistency when dealing with nondeterministic functions. writing to disk also aids in recovery in case of crash failures.
+for example, when an operation like an UPDATE is executed in postgreSQL, it is first written to the transaction log file and disk before being applied to the database. this entry in the transaction log can include details such as the transaction ID, operation type, affected table, and new values, after which the changes are replicated to the secondary nodes. however, the drawback of WAL is its tight coupling with the inner structure of the database engine, making software upgrades on the leader and followers complicated.
+
+#### Logical(row0based) replication
+**Logical(row0based) replication** is utilised in various relational databases, including postgresql and mysql. in this approach, changes made to the database are captured at the level of the individual rows and then replicated to the secondary nodes. istead of replicating the actual physical changes made to the database., this approach captures the operations in a logical format and then executes them on secondary nodes.
+for example, when operations like INSERT, or UPDATE are performed, the entire affected row is captured on the primary node, containing all the column values of the specified row. this captured change is then executed on secondary nodes, where they ensure that the data remains consistent with the data on the primary node. it offers advantages in terms of flexibility and compatitbility with different types of schemas.
+
+## multi-leader replication
+as discussed above, single leader replication using asynchronous replication has a drwback. there is only one primary node, and all the writes have to go through it, which limits the performance. in case of failure of the primary node, the secondary nodes may not have the updated database.
+**multi-leader replication** is an alternative to single leader replication. there are multiple primary nodes that process the writes and send them to all other primary and secondary nodes to replicate. this type of replication is used in databases along with external tools like the Tungsten Replication for MySQL
+this kind of replication is quite useful in applications in which we can continue work even if we are offline-for exampl, a calendar application in which we can set our meetings even if we dont have access to the internet. once we are online, it replicates it changes from our local database (our mobile phone or laptop acts as primary node) to other nodes
+![Screenshot 2024-03-01 at 16.23.44.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_fpPXDH%2FScreenshot%202024-03-01%20at%2016.23.44.png)
+
+## conflict
+multi-leader replication gives better performance and scalability than single leader replication, but it also has a significant disadvantage. since all the primary nodes concurrently deal with the requests, they may modify the same data, whch can create a conflict between them. for example, suppose the same data is edited by two clients simultaneously. in that case, their writes will be successful in their associated primary nodes, but when they reach other primary nodes asynchronously, it creates a conflict
+
+### Handle conflicts
+conflicts can result in different data at different nodes. these should be handled efficiently without losing any data. 
+![Screenshot 2024-03-01 at 16.27.45.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_YiE7ne%2FScreenshot%202024-03-01%20at%2016.27.45.png)
+### conflict avoidance
+a simple strategy to deal with conflicts is to prevent them from happening in the first place. conflicts can be avoided if the application can verify that all writes for a given record go via the same leader. 
+
+However, the conflict may still occur if a user moves to a different location and is now near a different data center. if that happens, we need to reroute the traffic. in such scenarios, the conflict avoidance approach fails and results in concurrent writes. 
+
+### Last-write wins
+Using their local clock, all nodes assign a timestamp to each update. when a conflict occurs, the update with the latest timestampis selected.
+this approach can also create difficulty becuse the clock synchronization across nodes is challenging in distributed systems. there is clock skew that can result in data loss.
+
+### multi-leader replication topologies
+there are many topologies through which multi-leader replication is implemented, such as circular topology, star topology, and all-to-all topology. the most common is the all-to-all topology. in start and circular topology, there is again a smililar drawback that if one of the nodes fails, it can affect the whole syste. that is why all-to-all is the most used topology.
+
+## peer-to-peer / leaderless replication
+in primary-secondary replication, the primary node is a bottleneck and a single point of failure. moreover, it helps to acheieve read scalability but fails to provide write scalability. the **peer-to-peer replication** model resolves these problems by not having a single primary node. all the nodes have equal weightage and cn accept read and write requests. this replication schema can be found in the cassandra database.
+![Screenshot 2024-03-01 at 16.38.12.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_eMuKIT%2FScreenshot%202024-03-01%20at%2016.38.12.png)
+like primary-secondary replication, this replication can also yield inconsistency. this is because when several nodes accept write requests, it may lead to concurrent writes. a helpful approach used for solving write-write inconsistency is called quorums
+
+### quorums
+let us suppose we have three nodes. if at least two out of three nodes are guaranteed to return successful updates, it means only one node has failed. this means that if we read from two nodes, atleast one of them will have the updated version, and our system can continue working. 
+if we have n nodes, that every write must be updated in at least w nodes to be considered a success, amd we must read from r nodes. we will get an updated value from reading as long as w + r > n because at least one of the nodes must have an updated write from which we can read. quorum reads and writes adhere to these r and w values. these n, w and r are configurable in Dunamo-styled databases. 
+![Screenshot 2024-03-01 at 16.44.00.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_2ypQAU%2FScreenshot%202024-03-01%20at%2016.44.00.png)
+
+# Data partitioning
+here we will learn more about Data partitioning models together with their pos and cons
+
+## why partition data?
+data is an asset for any organisation. increasing data and concurrent read/write traffic to the data puts scalability pressure on traditional databases. as a result the latency and throughput are affected. traditional databases  are attractive due to their properties such as range queries . a range query is a common database operation that retrieves all records where some value is between an upper and lower boundary. secondary indices . a secondary index is a way to efficiently access records in a database by means of some piece of information other than the priamary key. and transactions. a transaction is a single logical unit of work that accesses and possibly modiies the contents of a database. with the ACID properties.
+at some point, a single node-based database is not enough to tackle the load. we might need to distribute the data over many nodes but still export all the nice properties of relational databases. in practice, it has proved challengin to provide single-node database-like properties over distributedn database.
+one solution is to move data to a NoSQL-like system. however, the historical codebase and its close cohesion with traditional databases make it an expensive problem to tackle. 
+organizations might scale traditional databses by using a thord party solution. but often, integrating a theird party solution has its complexities. more importantly, there are an=bundant opportunities to optimize for the specific problem at hand and get much better performance than a general-purpose solution. 
+data partitioning or sharding enables us to use multiple nodes where each node manages some part of the whole data. 
 
 
 

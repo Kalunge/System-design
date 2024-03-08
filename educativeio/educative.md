@@ -1078,19 +1078,60 @@ here we will learn more about Data partitioning models together with their pos a
 data is an asset for any organisation. increasing data and concurrent read/write traffic to the data puts scalability pressure on traditional databases. as a result the latency and throughput are affected. traditional databases  are attractive due to their properties such as range queries . a range query is a common database operation that retrieves all records where some value is between an upper and lower boundary. secondary indices . a secondary index is a way to efficiently access records in a database by means of some piece of information other than the priamary key. and transactions. a transaction is a single logical unit of work that accesses and possibly modiies the contents of a database. with the ACID properties.
 at some point, a single node-based database is not enough to tackle the load. we might need to distribute the data over many nodes but still export all the nice properties of relational databases. in practice, it has proved challengin to provide single-node database-like properties over distributedn database.
 one solution is to move data to a NoSQL-like system. however, the historical codebase and its close cohesion with traditional databases make it an expensive problem to tackle. 
-organizations might scale traditional databses by using a thord party solution. but often, integrating a theird party solution has its complexities. more importantly, there are an=bundant opportunities to optimize for the specific problem at hand and get much better performance than a general-purpose solution. 
-data partitioning or sharding enables us to use multiple nodes where each node manages some part of the whole data. 
+organizations might scale traditional databses by using a thord party solution. but often, integrating a third party solution has its complexities. more importantly, there are an=bundant opportunities to optimize for the specific problem at hand and get much better performance than a general-purpose solution. 
+data partitioning or sharding enables us to use multiple nodes where each node manages some part of the whole data. to handle increasing query rates and data amounts, we strive fpr balanced partitions and balanced read/write load.
+we will discuss different ways to partition data, related challenges, and their solutions in this lesson.
+![Screenshot 2024-03-04 at 07.51.14.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_2es6WC%2FScreenshot%202024-03-04%20at%2007.51.14.png)
+
+## Sharding
+to divide load among multiple nodes, we need to partition tha data by a phenomenon called **partitioning** or **sharding**. in this appraoch, we split a large dataset into smaller chunks of data stored at different nodes on our network.
+the partitioning must be balanced so that each partition receives about the same amount of data. if partitioning is unbalanced, the majority of querire will fall into a few partitions. partitions tht are heavily loaded will create a system bottleneck. the efficacy of partitioning will be harmed because a significant portion of data retrieval queries will be sent to the nodes that carry the highly congested paritions. such partitions are nown as hotspots. generally, we use the following two ways to shard the data. 
+  **vertical sharding**
+  **horizontal sharding**
+
+### vertical sharding
+we can put different tables in various database instances,which might be running on a different physical server. we might break a table into multiple tables so that some columns are on one table while the rest are in the other. we should be careful if there are joins between multiple tables. we may like to keep such tables together on one shard. 
+often, **vertical sharding** is used to increase the speed of data retrieval from a table consisting of columns with very wide text or a binary large object(blob). in this case, the column with large text or blob is split into a different table. 
+as shown below, the ```Employee```, able is divided into two table; a reduced employee table and an employeePicture table. the employeepicture table has just two columns, employeeID and picture, separated from the original table. morever, the primary key is added in both partitioned tables. this makes the data read and write easier, and the reconstruction of the table is performed efficiently. 
+![Screenshot 2024-03-04 at 08.02.40.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_lWNkHz%2FScreenshot%202024-03-04%20at%2008.02.40.png)
+
+### Horizontal sharding
+at times, some tables in the databases become too big and affect read/wrote latency. **Horizontat sharding** or partitioning is used to divide a table into multiple tables by splitting data row-wise as hwon below. each partition of the original table distributed over database server is called a **shard**. there are two strateies to do the:
+  * key-range based sharding
+  * Hash-based sharding
+
+### key-range based sharding
+in this, each partition is assigned a continous range of keys. 
+in the figure below, horizontal partitioning on the invoice table is performed using key-range based sharding with customerid as the paritioning key. the two different colored tables represents the partitions. 
+![Screenshot 2024-03-04 at 08.07.28.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_OLjTqx%2FScreenshot%202024-03-04%20at%2008.07.28.png)
+sometimes, a database consist of multiple tables bound by foreign key relationsips. in such a case, the hosrizontal partition is performed using the same partition key on all tables in a relation. tables or subtables that belong to the same partition ley are distributed to one database shard. the following figure shows the several tables with same partition key are placed in a single database shard.
+![Screenshot 2024-03-04 at 08.10.14.png](..%2F..%2F..%2F..%2F..%2F..%2Fvar%2Ffolders%2Fjd%2F_tr5km9d1bn2rtnrw8k2rxsc0000gn%2FT%2FTemporaryItems%2FNSIRD_screencaptureui_5e87IX%2FScreenshot%202024-03-04%20at%2008.10.14.png)
+
+### advantages
+* using key-range based sharding method, the range-query-based schema is easy to implement. we precisely know where to look for a specific range of keys. 
+* range queries can be performed using the partitioning keys, and those can be kept in partitions in sorted order. hoe exactly such a sorting algorithm happens over time as new data comes in is implementation soecific
+### Disadvantages
+* Range queries cannot be performed using keys other than the partitioning key.
+* if keys are not selected properly, some nodes may have to store more data due to an uneven distribution.
 
 
+## Distributed Monitoring
+* Monitoring systems are critical in distributed systems because they help in analyzing the system and alerting the stakeholders if a problem occurs.
+* we can make a monitoring system scalable using a hybrid of the push and pull methods.
+* Heat maps are a powerful tool for visualization and help us learn about the health of thousands of servers in a compact space.
+* in a distributed system, it is difficult to detect and respond to errors on the client side. so it is necessary to monitor such events to provide a good user experience.
+* we can handle errors using an independent agent that sends service reports about any failures to a collector. such collectors should be independent of the primary service in terms of infrastructure and deployment.
 
+## The distributed Cache
+we studied the basics of the cache and designed a distributed cache that has a good level of availability, high performance, high scalability, and low cost. our mechanism maintains high availability using replicas, though if all replicas are in one data center, such a scheme won't tackle full data center failures. now that we have learned about the design basics we can explore popular open-source frameworks like Memcached and Redis
 
+## The Distributed Messaging Queue
+* why is the order of messages important and how do we enforce that order?
+* How does Ordering affect performance? How do we handle concurrency while accessing a queue
 
-
-
-
-
-
-
+## Pub-sub system
+* we saw two designs of pub-sub, using queues and using our custom storage optimized for writing and reading small-sized data.
+* there are numerous use cases of a pub-sub. due to decoupling between producers and consumers, the system can scale dynamically, and the failures are well-contained. Additionally, dur to proper accounting of data consumption, the pub-sub is a system of choice for a large-scale system that produces enormous data. we can determine precisely which data is needed and not needed. 
 
 
 

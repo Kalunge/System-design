@@ -1133,9 +1133,15 @@ we studied the basics of the cache and designed a distributed cache that has a g
 * we saw two designs of pub-sub, using queues and using our custom storage optimized for writing and reading small-sized data.
 * there are numerous use cases of a pub-sub. due to decoupling between producers and consumers, the system can scale dynamically, and the failures are well-contained. Additionally, dur to proper accounting of data consumption, the pub-sub is a system of choice for a large-scale system that produces enormous data. we can determine precisely which data is needed and not needed. 
 
+## The Rate-limiter
+* **Availability:** if a rate limiter fails, multiple rate limiters will be available to handle the oncoming requests. So, a single point of failure is eliminated.
+* **Low latency:** Our system retrieves and updates the data of each incoming requests from the cache instead of the database. First, the incoming requests are forwarded if they do not exceed the rate limit, and then the cache and database are updated.
+* **scalability:** the number of rate limiters can be increased or decreased based on the number of incoming requests within the defined limit.
+Now our system provides high availability, low latency, and scalability in light of the above features.
 
+## A blob store
 
-
+## The distributed task scheduler
 
 
 
